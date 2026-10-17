@@ -52,8 +52,8 @@
     <div class="preview-header">
         <h1 id="previewTitle">Preview</h1>
         <div class="actions">
-            <button onclick="toggleResponsiveMode()">Toggle Mobile View</button>
-            <button onclick="closePreview()">Close Preview</button>
+            <button onclick="toggleResponsiveMode()" id="mobileButton">Toggle Mobile View</button>
+            <button onclick="closePreview()" id="closeButton">Close Preview</button>
         </div>
     </div>
 
@@ -63,6 +63,18 @@
         // Static replacement for preview.php: builds the page in the browser
         // from data/works.json instead of writing temp files on a server.
         const frame = document.getElementById('previewFrame');
+        // Same language choice as the portfolio (saved by i18n.js)
+        let lang = 'en';
+        try { lang = localStorage.getItem('language') || ((navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en'); } catch (e) {}
+        const T = {
+            en: { preview: 'Preview', mobile: 'Toggle Mobile View', close: 'Close Preview', notFound: 'Project not found', noCode: 'No code available to preview', failed: 'Could not load the project.' },
+            pt: { preview: 'Pré-visualização', mobile: 'Vista de telemóvel', close: 'Fechar', notFound: 'Projeto não encontrado', noCode: 'Este projeto não tem código para pré-visualizar', failed: 'Não foi possível carregar o projeto.' }
+        }[lang === 'pt' ? 'pt' : 'en'];
+        const pick = v => typeof v === 'string' ? v : (v && (v[lang] || v.en)) || '';
+        document.documentElement.lang = lang === 'pt' ? 'pt-PT' : 'en';
+        document.getElementById('previewTitle').textContent = T.preview;
+        document.getElementById('mobileButton').textContent = T.mobile;
+        document.getElementById('closeButton').textContent = T.close;
         let blobUrl = null;
 
         function showMessage(text) {
@@ -80,15 +92,15 @@
                 .then(r => r.json())
                 .then(works => {
                     const work = works.find(w => String(w.id) === String(id));
-                    if (!work) return showMessage('Work not found');
+                    if (!work) return showMessage(T.notFound);
 
                     const html = work.html_code || '';
                     const css = work.css_code || '';
                     const js = work.js_code || '';
-                    if (!html && !css && !js) return showMessage('No code available to preview');
+                    if (!html && !css && !js) return showMessage(T.noCode);
 
-                    document.title = 'Preview: ' + work.title;
-                    document.getElementById('previewTitle').textContent = 'Preview: ' + work.title;
+                    document.title = T.preview + ': ' + pick(work.title);
+                    document.getElementById('previewTitle').textContent = T.preview + ': ' + pick(work.title);
 
                     const page = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
                         '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
@@ -102,7 +114,7 @@
                     blobUrl = URL.createObjectURL(new Blob([page], { type: 'text/html' }));
                     frame.src = blobUrl;
                 })
-                .catch(() => showMessage('Could not load the project.'));
+                .catch(() => showMessage(T.failed));
         }
 
         function toggleResponsiveMode() {

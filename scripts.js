@@ -5,16 +5,8 @@ const CONFIG = {
     hover: 0.15,
     background: 0.1,
   },
-
   sections: ["works", "about", "contact", "help"],
-
-  loadingMessages: [
-    "Loading assets",
-    "Initializing system",
-    "Connecting to network",
-    "Preparing interface",
-    "Almost ready",
-  ],
+  loadingMessageCount: 5,
   loadingMessageInterval: 2000,
   loadingScreenDelay: 1000,
   loadingScreenTimeout: 8000,
@@ -26,12 +18,7 @@ const CONFIG = {
 const DOM = {
   hoverSound: new Audio("media/hover.wav"),
   bgMusic: document.getElementById("bgMusic"),
-  musicIcon: document.getElementById("musicIcon"),
   home: document.getElementById("home"),
-  works: document.getElementById("works"),
-  about: document.getElementById("about"),
-  contact: document.getElementById("contact"),
-  help: document.getElementById("help"),
   parallaxBg: document.getElementById("parallax-bg"),
   loadingScreen: document.getElementById("loadingScreen"),
   loadingText: document.getElementById("loadingText"),
@@ -39,11 +26,21 @@ const DOM = {
   codeModal: document.getElementById("codeModal"),
   codeModalTitle: document.getElementById("codeModalTitle"),
   codeModalBody: document.getElementById("codeModalBody"),
-  helpToggle: document.getElementById("helpToggle"),
-  helpContent: document.querySelector(".help-content"),
-  helpClose: document.querySelector(".help-close"),
+  projectModal: document.getElementById("projectModal"),
+  projectModalTitle: document.getElementById("projectModalTitle"),
+  projectModalBody: document.getElementById("projectModalBody"),
+  lightbox: document.getElementById("lightbox"),
+  helpContent: document.getElementById("helpContent"),
   searchInput: document.getElementById("workSearch"),
+  filters: document.getElementById("workFilters"),
 };
+
+const t = (key, vars) => Lang.t(key, vars);
+const pick = (value) => Lang.pick(value);
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
 
 // ===== Audio Functions =====
 
@@ -51,23 +48,14 @@ function initializeAudio() {
   DOM.hoverSound.volume = CONFIG.audioVolumes.hover;
   DOM.bgMusic.volume = CONFIG.audioVolumes.background;
   DOM.bgMusic.muted = false;
-
   window.addEventListener("load", handleAudioPlay);
 }
 
 function handleAudioPlay() {
   const playPromise = DOM.bgMusic.play();
-
   if (playPromise !== undefined) {
     playPromise.catch(() => {
-      console.log("Autoplay prevented. Will play on user interaction.");
-      document.body.addEventListener(
-        "click",
-        () => {
-          DOM.bgMusic.play().catch((err) => console.error("Play failed:", err));
-        },
-        { once: true }
-      );
+      document.body.addEventListener("click", () => DOM.bgMusic.play().catch(() => {}), { once: true });
     });
   }
 }
@@ -75,44 +63,33 @@ function handleAudioPlay() {
 function toggleMute() {
   DOM.bgMusic.muted = !DOM.bgMusic.muted;
   const musicToggle = document.getElementById("musicToggle");
-  if (musicToggle) {
-    musicToggle.checked = !DOM.bgMusic.muted;
-  }
+  if (musicToggle) musicToggle.checked = !DOM.bgMusic.muted;
+  saveSettings();
+}
+
+function playHover() {
+  DOM.hoverSound.currentTime = 0;
+  DOM.hoverSound.play().catch(() => {});
 }
 
 function setupHoverableSounds() {
-  const hoverableSelectors =
-    ".menu-button, .back-button, .code-icon, #helpToggle";
-  const hoverables = document.querySelectorAll(hoverableSelectors);
-
-  hoverables.forEach((el) => {
-    el.addEventListener("mouseenter", () => {
-      DOM.hoverSound.currentTime = 0;
-      DOM.hoverSound.play().catch(() => {});
-    });
+  document.addEventListener("mouseover", (e) => {
+    const el = e.target.closest(".menu-button, .back-button, .code-icon, #helpToggle, .filter-chip, .lang-option");
+    if (el && !el.contains(e.relatedTarget)) playHover();
   });
-}
-
-// ===== Visual Effects =====
-
-function setupVisualEffects() {
-  // The background and its mouse parallax are handled by background.js
 }
 
 // ===== Navigation Functions =====
 
 function navigateTo(sectionId) {
   const section = document.getElementById(sectionId);
+  if (!section) return;
 
-  if (!section) {
-    console.error(`Section with id "${sectionId}" not found`);
-    return;
-  }
   CONFIG.sections.forEach((id) => {
-    const sectionElement = document.getElementById(id);
-    if (sectionElement) {
-      sectionElement.style.display = "none";
-      sectionElement.classList.remove("fade-in");
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = "none";
+      el.classList.remove("fade-in");
     }
   });
 
@@ -134,212 +111,279 @@ function goBack() {
   navigateTo("home");
 }
 
-// ===== Code Preview Modal Functions =====
-// Static version: code comes from data/works.json instead of code_preview.php
-let worksCache = null;
-function getWorks() {
-  if (!worksCache) {
-    worksCache = fetch("data/works.json", { cache: "no-cache" }).then((r) => {
-      if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
-      return r.json();
+// ===== Projects data =====
+// Each project in data/works.json is either:
+//   type "web":      html_code / css_code / js_code (live preview + code), optional links.live
+//   type "software": platforms, gallery [{src, caption}], features [{title, text}], links {repo, download, live}
+// Text fields can be a plain string or {"en": "...", "pt": "..."}. technologies is never translated.
+
+let works = [];
+let activeFilter = "all";
+
+function projectType(work) {
+  if (work.type === "software" || work.type === "web") return work.type;
+  return work.html_code || work.css_code || work.js_code ? "web" : "software";
+}
+
+function hasCode(work) {
+  return ["html", "css", "js"].some((k) => (work[`${k}_code`] || "").trim() !== "");
+}
+
+function fetchAndDisplayWorks() {
+  fetch("data/works.json", { cache: "no-cache" })
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    })
+    .then((data) => {
+      if (!Array.isArray(data)) throw new Error("works.json must be a list");
+      works = data;
+      renderWorks();
+    })
+    .catch((error) => {
+      console.error(error);
+      showCyberpunkError(`${t("works.loadFailed")}: ${error.message}`, DOM.worksContainer, t("works.retry"));
     });
+}
+
+function renderWorks() {
+  if (!DOM.worksContainer) return;
+  DOM.worksContainer.innerHTML = "";
+
+  if (works.length === 0) {
+    DOM.worksContainer.innerHTML = `<div class="cyberpunk-card no-results"><p class="text-purple-300">${t("works.none")}</p></div>`;
+    return;
   }
-  return worksCache;
+
+  works.forEach((work, index) => {
+    const card = createWorkCard(work);
+    card.style.animation = `fadeIn 0.5s ease forwards ${index * 0.08}s`;
+    card.style.opacity = "0";
+    DOM.worksContainer.appendChild(card);
+  });
+  applyFilters();
+}
+
+function createWorkCard(work) {
+  const type = projectType(work);
+  const card = document.createElement("div");
+  card.className = `cyberpunk-card work-${type}`;
+  card.dataset.type = type;
+
+  const links = work.links || {};
+  const platforms = Array.isArray(work.platforms) ? work.platforms : [];
+  const buttons = [];
+  if (type === "web" && hasCode(work)) {
+    buttons.push(`<button class="code-icon" data-action="preview" data-id="${escapeHtml(work.id)}" title="${t("works.preview")}" aria-label="${t("works.preview")}"><i class="bi bi-eye-fill"></i></button>`);
+    buttons.push(`<button class="code-icon" data-action="code" data-id="${escapeHtml(work.id)}" title="${t("works.code")}" aria-label="${t("works.code")}"><i class="bi bi-code-slash"></i></button>`);
+  }
+  if (type === "software") {
+    buttons.push(`<button class="code-icon code-icon--wide" data-action="details" data-id="${escapeHtml(work.id)}" title="${t("works.details")}"><i class="bi bi-window-stack"></i><span>${t("works.details")}</span></button>`);
+  }
+  if (links.live) buttons.push(`<a class="code-icon" href="${escapeHtml(links.live)}" target="_blank" rel="noopener" title="${t("works.live")}" aria-label="${t("works.live")}"><i class="bi bi-box-arrow-up-right"></i></a>`);
+  if (links.repo) buttons.push(`<a class="code-icon" href="${escapeHtml(links.repo)}" target="_blank" rel="noopener" title="${t("works.repo")}" aria-label="${t("works.repo")}"><i class="bi bi-github"></i></a>`);
+  if (links.download) buttons.push(`<a class="code-icon" href="${escapeHtml(links.download)}" target="_blank" rel="noopener" title="${t("works.download")}" aria-label="${t("works.download")}"><i class="bi bi-download"></i></a>`);
+
+  const kind =
+    type === "software"
+      ? `<i class="bi bi-window-stack"></i> ${t("works.software")}${platforms.length ? " · " + platforms.map(escapeHtml).join(" · ") : ""}`
+      : `<i class="bi bi-globe2"></i> ${t("works.web")}`;
+
+  card.innerHTML = `
+    <div class="work-media">
+      <img src="${escapeHtml(work.image_url)}" alt="${escapeHtml(pick(work.title))}" class="work-image" loading="lazy">
+      <span class="work-kind work-kind--${type}">${kind}</span>
+    </div>
+    <h3>${escapeHtml(pick(work.title))}</h3>
+    <p class="date">${formatDate(work.date)}</p>
+    <p class="description">${escapeHtml(pick(work.description))}</p>
+    <div class="tech-tags">
+      ${String(work.technologies || "")
+        .split(",")
+        .map((tech) => tech.trim())
+        .filter(Boolean)
+        .map((tech) => `<span class="tech-tag">${escapeHtml(tech)}</span>`)
+        .join("")}
+    </div>
+    <div class="controls"><div class="code-preview-icons">${buttons.join("")}</div></div>
+  `;
+
+  card.addEventListener("mouseenter", function () {
+    this.classList.add("glitch-hover");
+    playHover();
+  });
+  card.addEventListener("mouseleave", function () {
+    this.classList.remove("glitch-hover");
+  });
+  return card;
+}
+
+function formatDate(value) {
+  const d = new Date(value);
+  if (!value || isNaN(d)) return escapeHtml(value || "");
+  return d.toLocaleDateString(Lang.current === "pt" ? "pt-PT" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// ===== Search and filters =====
+
+function applyFilters() {
+  const term = (DOM.searchInput?.value || "").trim().toLowerCase();
+  const cards = DOM.worksContainer.querySelectorAll(".cyberpunk-card:not(.no-results)");
+  let visible = 0;
+
+  cards.forEach((card) => {
+    const text = card.textContent.toLowerCase();
+    const show = (activeFilter === "all" || card.dataset.type === activeFilter) && (term === "" || text.includes(term));
+    card.style.display = show ? "flex" : "none";
+    if (show) visible++;
+  });
+
+  DOM.worksContainer.querySelectorAll(".no-results").forEach((el) => el.remove());
+  if (visible === 0 && cards.length > 0) {
+    const empty = document.createElement("div");
+    empty.className = "cyberpunk-card no-results";
+    empty.innerHTML = `<p class="text-purple-300">${t("works.noMatch")}</p><p class="text-purple-400 text-sm">${t("works.tryAgain")}</p>`;
+    DOM.worksContainer.appendChild(empty);
+  }
+}
+
+function setupSearch() {
+  DOM.searchInput?.addEventListener("input", applyFilters);
+  DOM.filters?.addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    activeFilter = chip.dataset.filter;
+    DOM.filters.querySelectorAll(".filter-chip").forEach((c) => {
+      c.classList.toggle("active", c === chip);
+      c.setAttribute("aria-pressed", c === chip);
+    });
+    applyFilters();
+  });
+}
+
+// ===== Code modal (web projects) =====
+
+function findWork(id) {
+  return works.find((w) => String(w.id) === String(id));
 }
 
 function openCodeModal(workId, codeType) {
-  getWorks()
-    .then((works) => {
-      const work = works.find((w) => String(w.id) === String(workId));
-      if (!work) throw new Error("Work not found");
-      DOM.codeModalTitle.textContent = `${work.title} - ${codeType.toUpperCase()}`;
-      DOM.codeModalBody.textContent = work[`${codeType}_code`] || "No code available";
-      DOM.codeModal.classList.add("active");
-    })
-    .catch((error) => {
-      console.error("Error loading code:", error);
-    });
+  const work = findWork(workId);
+  if (!work) return;
+  const tabs = ["html", "css", "js"].filter((k) => (work[`${k}_code`] || "").trim() !== "");
+  if (tabs.length === 0) return;
+  const current = tabs.includes(codeType) ? codeType : tabs[0];
+
+  DOM.codeModalTitle.textContent = `${pick(work.title)} · ${t("modal.code")}`;
+  // No whitespace between the tags: the code area keeps white-space: pre
+  DOM.codeModalBody.innerHTML =
+    `<div class="code-tabs">${tabs
+      .map((k) => `<button type="button" class="code-tab ${k === current ? "active" : ""}" data-tab="${k}" data-id="${escapeHtml(work.id)}">${k.toUpperCase()}</button>`)
+      .join("")}</div>` + `<pre class="code-block"></pre>`;
+  DOM.codeModalBody.querySelector(".code-block").textContent = work[`${current}_code`];
+  DOM.codeModal.classList.add("active");
 }
 
 function openPreview(workId) {
-  window.open(`preview.html?id=${workId}`, "_blank", "width=1024,height=768");
+  window.open(`preview.html?id=${encodeURIComponent(workId)}`, "_blank", "width=1024,height=768");
 }
 
 function closeCodeModal() {
   DOM.codeModal.classList.remove("active");
 }
 
-// ===== Work Items Functions =====
-function fetchAndDisplayWorks() {
-  fetch("data/works.json", { cache: "no-cache" })
-    .then((response) => {
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-      return response.json();
-    })
-    .then((works) => {
-      renderWorks(works);
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      showCyberpunkError(
-        `Failed to load works: ${error.message}`,
-        DOM.worksContainer,
-        "Retry"
-      );
-    });
-}
+// ===== Details modal (software projects) =====
 
-function renderWorks(works) {
-  if (!DOM.worksContainer) return;
+function openProjectModal(workId) {
+  const work = findWork(workId);
+  if (!work) return;
+  const links = work.links || {};
+  const gallery = Array.isArray(work.gallery) && work.gallery.length ? work.gallery : [{ src: work.image_url, caption: work.title }];
+  const features = Array.isArray(work.features) ? work.features : [];
+  const platforms = Array.isArray(work.platforms) ? work.platforms : [];
 
-  DOM.worksContainer.innerHTML = "";
-
-  if (!Array.isArray(works)) {
-    throw new Error("Expected array but got " + typeof works);
-  }
-
-  if (works.length === 0) {
-    DOM.worksContainer.innerHTML = `
-      <div class="cyberpunk-card">
-        <p class="text-purple-300">No works found</p>
-      </div>
-    `;
-    return;
-  }
-
-  works.forEach((work) => {
-    const card = createWorkCard(work);
-    DOM.worksContainer.appendChild(card);
-  });
-
-  document.querySelectorAll(".cyberpunk-card").forEach((card, index) => {
-    card.style.animation = `fadeIn 0.5s ease forwards ${index * 0.1}s`;
-    card.style.opacity = "0";
-  });
-}
-
-function createWorkCard(work) {
-  const card = document.createElement("div");
-  card.className = "cyberpunk-card";
-
-  const hasHtml = work.html_code && work.html_code.trim() !== "";
-  const hasCss = work.css_code && work.css_code.trim() !== "";
-  const hasJs = work.js_code && work.js_code.trim() !== "";
-  const hasAnyCode = hasHtml || hasCss || hasJs;
-
-  card.innerHTML = `
-    <img src="${work.image_url}" alt="${work.title}" class="work-image">
-    <h3>${work.title}</h3>
-    <p class="date">${work.date}</p>
-    <p class="description">${work.description}</p>
-    <div class="tech-tags">
-      ${work.technologies
-        .split(",")
-        .map((tech) => `<span class="tech-tag">${tech.trim()}</span>`)
+  DOM.projectModalTitle.textContent = pick(work.title);
+  DOM.projectModalBody.innerHTML = `
+    ${work.tagline ? `<p class="project-tagline">${escapeHtml(pick(work.tagline))}</p>` : ""}
+    <div class="project-meta">
+      ${platforms.map((p) => `<span class="work-kind work-kind--software">${escapeHtml(p)}</span>`).join("")}
+      ${String(work.technologies || "").split(",").map((x) => x.trim()).filter(Boolean).map((x) => `<span class="tech-tag">${escapeHtml(x)}</span>`).join("")}
+    </div>
+    <p class="project-description">${escapeHtml(pick(work.description))}</p>
+    <div class="project-links">
+      ${links.download ? `<a class="menu-button project-link" href="${escapeHtml(links.download)}" target="_blank" rel="noopener"><i class="bi bi-download"></i> ${t("works.download")}</a>` : ""}
+      ${links.repo ? `<a class="menu-button project-link" href="${escapeHtml(links.repo)}" target="_blank" rel="noopener"><i class="bi bi-github"></i> ${t("works.repo")}</a>` : ""}
+      ${links.live ? `<a class="menu-button project-link" href="${escapeHtml(links.live)}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> ${t("works.live")}</a>` : ""}
+    </div>
+    <h4 class="project-heading">${t("works.screenshots")}</h4>
+    <div class="project-gallery">
+      ${gallery
+        .map(
+          (g) => `<figure class="project-shot" tabindex="0">
+            <img src="${escapeHtml(g.src)}" alt="${escapeHtml(pick(g.caption))}" loading="lazy">
+            ${g.caption ? `<figcaption>${escapeHtml(pick(g.caption))}</figcaption>` : ""}
+          </figure>`
+        )
         .join("")}
     </div>
-    <div class="controls">
-      <div class="code-preview-icons">
-        ${
-          hasAnyCode
-            ? `
-          <button class="code-icon preview-icon" data-action="preview" data-id="${work.id}" title="Live Preview">
-            <i class="bi bi-eye-fill"></i>
-          </button>
-        `
-            : ""
-        }
-      </div>
-    </div>
-  `;
-
-  card.addEventListener("mouseenter", function () {
-    this.classList.add("glitch-hover");
-    DOM.hoverSound.currentTime = 0;
-    DOM.hoverSound.play().catch(() => {});
-  });
-
-  card.addEventListener("mouseleave", function () {
-    this.classList.remove("glitch-hover");
-  });
-
-  return card;
+    ${
+      features.length
+        ? `<h4 class="project-heading">${t("works.features")}</h4>
+           <div class="project-features">${features
+             .map((f) => `<div class="project-feature"><h5>${escapeHtml(pick(f.title))}</h5><p>${escapeHtml(pick(f.text))}</p></div>`)
+             .join("")}</div>`
+        : ""
+    }
+    <p class="project-footnote">${t("works.enlarge")}</p>`;
+  DOM.projectModal.dataset.id = work.id;
+  DOM.projectModal.classList.add("active");
 }
+
+function closeProjectModal() {
+  DOM.projectModal.classList.remove("active");
+  delete DOM.projectModal.dataset.id;
+}
+
+function openLightbox(src, caption) {
+  DOM.lightbox.querySelector("img").src = src;
+  DOM.lightbox.querySelector("img").alt = caption || "";
+  DOM.lightbox.querySelector(".lightbox-caption").textContent = caption || "";
+  DOM.lightbox.classList.add("open");
+  DOM.lightbox.setAttribute("aria-hidden", "false");
+}
+
+function closeLightbox() {
+  DOM.lightbox.classList.remove("open");
+  DOM.lightbox.setAttribute("aria-hidden", "true");
+}
+
+// ===== Loading screen =====
 
 function setupLoadingScreen() {
   let messageIndex = 0;
-
   const messageInterval = setInterval(() => {
-    messageIndex = (messageIndex + 1) % CONFIG.loadingMessages.length;
-    DOM.loadingText.textContent = CONFIG.loadingMessages[messageIndex];
+    messageIndex = (messageIndex + 1) % CONFIG.loadingMessageCount;
+    DOM.loadingText.textContent = t(`loading.${messageIndex}`);
   }, CONFIG.loadingMessageInterval);
 
-  window.addEventListener("load", () => {
-    setTimeout(() => {
-      clearInterval(messageInterval);
-      DOM.loadingScreen.classList.add("hide-loading");
-    }, CONFIG.loadingScreenDelay);
-  });
-
-  setTimeout(() => {
+  const hide = () => {
     clearInterval(messageInterval);
     DOM.loadingScreen.classList.add("hide-loading");
-  }, CONFIG.loadingScreenTimeout);
+  };
+  window.addEventListener("load", () => setTimeout(hide, CONFIG.loadingScreenDelay));
+  setTimeout(hide, CONFIG.loadingScreenTimeout);
 }
 
-function setupSearch() {
-  if (!DOM.searchInput || !DOM.worksContainer) return;
-
-  DOM.searchInput.addEventListener("input", function () {
-    const searchTerm = this.value.toLowerCase();
-    const workCards = DOM.worksContainer.querySelectorAll(
-      ".cyberpunk-card:not(.no-results)"
-    );
-
-    workCards.forEach((card) => {
-      const title = card.querySelector("h3")?.textContent.toLowerCase() || "";
-      const description =
-        card.querySelector(".description")?.textContent.toLowerCase() || "";
-      const technologies =
-        card.querySelector(".tech-tags")?.textContent.toLowerCase() || "";
-
-      if (
-        title.includes(searchTerm) ||
-        description.includes(searchTerm) ||
-        technologies.includes(searchTerm)
-      ) {
-        card.style.display = "flex";
-        card.style.animation = "fadeIn 0.3s ease forwards";
-      } else {
-        card.style.display = "none";
-      }
-    });
-
-    const visibleCards = Array.from(workCards).filter(
-      (card) => card.style.display !== "none"
-    );
-
-    DOM.worksContainer
-      .querySelectorAll(".no-results")
-      .forEach((el) => el.remove());
-
-    if (visibleCards.length === 0 && searchTerm !== "") {
-      const noResults = document.createElement("div");
-      noResults.className = "cyberpunk-card no-results";
-      noResults.innerHTML = `
-        <p class="text-purple-300">No matching projects found</p>
-        <p class="text-purple-400 text-sm">Try a different search term</p>
-      `;
-      DOM.worksContainer.appendChild(noResults);
-    }
-  });
-}
+// ===== Keyboard =====
 
 function setupKeyboardNavigation() {
   document.addEventListener("keydown", function (event) {
+    const typing = event.target.closest("input, textarea, select, [contenteditable]");
+
     if (event.key === "Escape") {
+      if (DOM.lightbox.classList.contains("open")) return closeLightbox();
       closeCodeModal();
+      closeProjectModal();
       DOM.helpContent?.classList.remove("active");
     }
 
@@ -349,110 +393,57 @@ function setupKeyboardNavigation() {
       if (event.key === "3") navigateTo("about");
       if (event.key === "4") navigateTo("contact");
       if (event.key === "h" || event.key === "H") toggleHelpMenu();
+      return;
     }
 
-    if (event.key === "m" || event.key === "M") {
-      toggleMute();
-    }
+    if (typing || event.ctrlKey || event.metaKey) return;
+    if (event.key === "m" || event.key === "M") toggleMute();
+    if (event.key === "l" || event.key === "L") Lang.toggle();
   });
 
-  document
-    .querySelectorAll(".menu-button, .back-button, .code-icon")
-    .forEach((el) => {
-      el.setAttribute("tabindex", "0");
-
-      el.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") {
-          this.click();
-        }
-      });
-    });
+  document.addEventListener("keydown", (event) => {
+    const fig = event.target.closest?.(".project-shot");
+    if (fig && event.key === "Enter") fig.click();
+  });
 }
 
+// ===== Help =====
 
 function setupHelpMenu() {
   const helpToggle = document.getElementById("helpToggle");
-  const helpContent = document.getElementById("helpContent");
+  const helpContent = DOM.helpContent;
   const helpClose = document.getElementById("helpClose");
-
   if (!helpToggle || !helpContent) return;
 
-  helpToggle.addEventListener("click", function (e) {
+  helpToggle.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
     helpContent.classList.toggle("active");
   });
-
-  if (helpClose) {
-    helpClose.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      helpContent.classList.remove("active");
-    });
-  }
-
-  document.addEventListener("click", function (e) {
-    if (
-      !e.target.closest(".help-hover-menu") &&
-      helpContent.classList.contains("active")
-    ) {
-      helpContent.classList.remove("active");
-    }
+  helpClose?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    helpContent.classList.remove("active");
   });
-
-  helpContent.addEventListener("click", function (e) {
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".help-hover-menu")) helpContent.classList.remove("active");
+  });
+  helpContent.addEventListener("click", (e) => {
+    const link = e.target.closest("a");
+    if (link) {
+      link.setAttribute("target", "_blank");
+      link.setAttribute("rel", "noopener noreferrer");
+    }
     e.stopPropagation();
   });
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && helpContent.classList.contains("active")) {
-      helpContent.classList.remove("active");
-    }
-  });
-
-  const helpLinks = document.querySelectorAll(".help-content a");
-  helpLinks.forEach((link) => {
-    link.setAttribute("target", "_blank");
-    link.setAttribute("rel", "noopener noreferrer");
-  });
-
-  updateKeyboardShortcutsInHelp();
 }
 
 function toggleHelpMenu() {
-  const helpContent = document.getElementById("helpContent");
-  if (helpContent) {
-    helpContent.classList.toggle("active");
-  }
-}
-
-function updateKeyboardShortcutsInHelp() {
-  document.querySelectorAll(".shortcut-grid").forEach((grid) => {
-    const shortcuts = grid.querySelectorAll(".shortcut");
-    shortcuts.forEach((shortcut) => {
-      if (shortcut.innerHTML.includes("Alt+5")) {
-        shortcut.innerHTML = '<span class="key">Alt+H</span> Toggle Help';
-      }
-    });
-  });
+  DOM.helpContent?.classList.toggle("active");
 }
 
 function setupTooltips() {
-  const tooltipItems = [
-    { selector: '.code-icon[data-action="preview"]', text: "See live preview" },
-    { selector: "#muteButton", text: "Toggle music (M)" },
-    { selector: ".menu-button", text: "Navigate to section" },
-    { selector: ".back-button", text: "Return to home" },
-    { selector: ".admin-access-area a", text: "Admin access" },
-
-  ];
-
-  tooltipItems.forEach((item) => {
-    document.querySelectorAll(item.selector).forEach((el) => {
-      el.setAttribute("title", item.text);
-      el.setAttribute("aria-label", item.text);
-    });
-  });
+  document.querySelectorAll(".menu-button").forEach((el) => el.setAttribute("title", t("tip.menu")));
 }
 
 function showCyberpunkError(message, container, action = null) {
@@ -461,53 +452,56 @@ function showCyberpunkError(message, container, action = null) {
   errorElement.innerHTML = `
     <div class="error-icon"><i class="bi bi-exclamation-triangle"></i></div>
     <div class="error-content">
-      <p class="error-title">SYSTEM FAILURE</p>
-      <p class="error-message">${message}</p>
-      ${action ? `<button class="error-action">${action}</button>` : ""}
-    </div>
-  `;
-
-  if (typeof container === "string") {
-    document.getElementById(container).innerHTML = "";
-    document.getElementById(container).appendChild(errorElement);
-  } else {
-    container.innerHTML = "";
-    container.appendChild(errorElement);
-  }
-
-  if (action) {
-    errorElement
-      .querySelector(".error-action")
-      .addEventListener("click", () => {
-        location.reload();
-      });
-  }
-
-  setTimeout(() => {
-    errorElement.classList.add("glitch-active");
-  }, 100);
+      <p class="error-title">${t("error.title")}</p>
+      <p class="error-message">${escapeHtml(message)}</p>
+      ${action ? `<button class="error-action">${escapeHtml(action)}</button>` : ""}
+    </div>`;
+  const target = typeof container === "string" ? document.getElementById(container) : container;
+  target.innerHTML = "";
+  target.appendChild(errorElement);
+  errorElement.querySelector(".error-action")?.addEventListener("click", () => location.reload());
+  setTimeout(() => errorElement.classList.add("glitch-active"), 100);
 }
 
-// ===== Event Listeners Setup =====
+// ===== Event Listeners =====
 
 function setupEventListeners() {
-  DOM.codeModal?.addEventListener("click", function (e) {
-    if (e.target === this) {
-      closeCodeModal();
+  DOM.codeModal?.addEventListener("click", (e) => {
+    if (e.target === DOM.codeModal) closeCodeModal();
+  });
+  DOM.projectModal?.addEventListener("click", (e) => {
+    if (e.target === DOM.projectModal) closeProjectModal();
+  });
+  DOM.lightbox?.addEventListener("click", closeLightbox);
+
+  document.addEventListener("click", (e) => {
+    const tab = e.target.closest(".code-tab");
+    if (tab) return openCodeModal(tab.dataset.id, tab.dataset.tab);
+
+    const shot = e.target.closest(".project-shot");
+    if (shot) {
+      const img = shot.querySelector("img");
+      return openLightbox(img.src, img.alt);
     }
+
+    const button = e.target.closest("button.code-icon");
+    if (!button) return;
+    const action = button.dataset.action;
+    const id = button.dataset.id;
+    if (action === "preview") openPreview(id);
+    else if (action === "code") openCodeModal(id);
+    else if (action === "details") openProjectModal(id);
   });
 
-  document.addEventListener("click", function (e) {
-    const button = e.target.closest(".code-icon");
-    if (!button) return;
-
-    const action = button.getAttribute("data-action");
-    const workId = button.getAttribute("data-id");
-
-    if (action === "preview") {
-      openPreview(workId);
-    } else if (["html", "css", "js"].includes(action)) {
-      openCodeModal(workId, action);
+  // Everything that is built from JavaScript is rebuilt when the language changes
+  Lang.onChange(() => {
+    renderWorks();
+    setupTooltips();
+    updateAge();
+    if (DOM.projectModal.dataset.id) openProjectModal(DOM.projectModal.dataset.id);
+    if (DOM.codeModal.classList.contains("active")) {
+      const active = DOM.codeModalBody.querySelector(".code-tab.active");
+      if (active) openCodeModal(active.dataset.id, active.dataset.tab);
     }
   });
 }
@@ -516,16 +510,15 @@ function setupEventListeners() {
 
 function init() {
   initializeAudio();
-  setupVisualEffects();
   setupLoadingScreen();
   setupEventListeners();
-
   setupHoverableSounds();
   setupKeyboardNavigation();
   setupSearch();
   setupHelpMenu();
   setupTooltips();
-
+  setupSettingsMenu();
+  updateAge();
   fetchAndDisplayWorks();
 }
 
@@ -650,50 +643,6 @@ function loadSettings() {
   }
 }
 
-function init() {
-  initializeAudio();
-  setupVisualEffects();
-  setupLoadingScreen();
-  setupEventListeners();
-
-  setupHoverableSounds();
-  setupKeyboardNavigation();
-  setupSearch();
-  setupHelpMenu();
-  setupTooltips();
-  setupSettingsMenu();
-
-  const muteButton = document.getElementById("muteButton");
-  if (muteButton) {
-    muteButton.style.display = "none";
-  }
-
-  fetchAndDisplayWorks();
-
-  function fetchAndDisplayWorks() {
-    fetch("data/works.json", { cache: "no-cache" })
-      .then((response) => {
-        if (!response.ok) {
-          console.error(`HTTP error! status: ${response.status}`);
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((works) => {
-        console.log("Works data received:", works);
-        renderWorks(works);
-      })
-      .catch((error) => {
-        console.error("Error details:", error);
-        showCyberpunkError(
-          `Failed to load works: ${error.message}`,
-          DOM.worksContainer,
-          "Retry"
-        );
-      });
-  }
-}
-
 function calculateAge(birthDate) {
   const today = new Date();
   const birth = new Date(birthDate);
@@ -709,13 +658,10 @@ function calculateAge(birthDate) {
 }
 
 function updateAge() {
-  const birthDate = "2002-01-24";
-  const currentAge = calculateAge(birthDate);
-
-  const ageElement = document.getElementById("dynamic-age");
-  if (ageElement) {
-    ageElement.textContent = currentAge;
+  const age = calculateAge("2002-01-24");
+  const bio = document.querySelector('[data-i18n-html="about.bio"]');
+  if (bio) {
+    bio.dataset.i18nVars = JSON.stringify({ age });
+    bio.innerHTML = Lang.t("about.bio", { age });
   }
 }
-
-document.addEventListener("DOMContentLoaded", updateAge);

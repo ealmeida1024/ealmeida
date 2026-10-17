@@ -299,7 +299,7 @@
 
     <div class="text-center z-10">
         <div class="glitch-text">404</div>
-        <div class="error-subtitle">SYSTEM ERROR</div>
+        <div class="error-subtitle" data-t="subtitle">SYSTEM ERROR</div>
         
         <div class="terminal-container text-left max-w-md mx-auto">
             <div class="terminal-header">
@@ -308,22 +308,30 @@
                 <div class="terminal-dot green"></div>
                 <span class="ml-2 text-gray-400">system@ea-portfolio:~$</span>
             </div>
-            <div class="terminal-line">> Scanning network...</div>
-            <div class="terminal-line">> ERROR: File not found</div>
-            <div class="terminal-line">> Running diagnostic...</div>
-            <div class="terminal-line">> Suggestion: Return to base</div>
-            <div class="terminal-line">> System ready <span class="cursor"></span></div>
+            <div class="terminal-line" data-t="l1">> Scanning network...</div>
+            <div class="terminal-line" data-t="l2">> ERROR: File not found</div>
+            <div class="terminal-line" data-t="l3">> Running diagnostic...</div>
+            <div class="terminal-line" data-t="l4">> Suggestion: Return to base</div>
+            <div class="terminal-line"><span data-t="l5">> System ready</span> <span class="cursor"></span></div>
         </div>
 
         <div class="action-buttons">
             <button class="menu-button" onclick="history.back()">
                 <i class="bi bi-arrow-left"></i>
-                Go Back
+                <span data-t="back">Go Back</span>
             </button>
         </div>
     </div>
 
     <script>
+        (function () {
+            let lang = 'en';
+            try { lang = localStorage.getItem('language') || ((navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en'); } catch (e) {}
+            if (lang !== 'pt') return;
+            document.documentElement.lang = 'pt-PT';
+            const T = { subtitle: 'ERRO DO SISTEMA', l1: '> A analisar a rede...', l2: '> ERRO: Ficheiro não encontrado', l3: '> A executar diagnóstico...', l4: '> Sugestão: Voltar à base', l5: '> Sistema pronto', back: 'Voltar' };
+            document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T[el.dataset.t]; });
+        })();
         function createMatrixRain() {
             const matrixContainer = document.getElementById('matrixRain');
             const characters = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
