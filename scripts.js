@@ -8,7 +8,7 @@ const CONFIG = {
   sections: ["works", "about", "contact", "help"],
   loadingMessageCount: 5,
   loadingMessageInterval: 2000,
-  loadingScreenDelay: 1000,
+  loadingScreenDelay: 300,
   loadingScreenTimeout: 8000,
   transitionDelay: 500,
 };

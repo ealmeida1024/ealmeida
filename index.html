@@ -8,10 +8,11 @@
   <link rel="icon" href="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1w5V9ntc7nRDkPqL8tzdeXUCio29BAvsmcOxT">
 
   <!-- External Resources -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Chakra+Petch:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="styles.css?v=5">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Chakra+Petch:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="tailwind.css?v=1">
 </head>
 
 <body class="text-center flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 relative">
@@ -21,7 +22,7 @@
 
   <!-- Loading Page Section -->
   <div id="loadingScreen" class="loading-container">
-    <img src="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1EVc1N3N0SMKnyG6ec3ri9XfWv18dmkRbFg7L" alt="Logo" class="loading-logo">
+    <img src="media/logo.webp" width="320" height="320" alt="Logo" class="loading-logo" fetchpriority="high">
     <div class="loading-bar-container">
       <div class="loading-bar"></div>
     </div>
@@ -30,7 +31,7 @@
 
   <!-- Main Page Section -->
   <div id="home" class="z-10">
-    <img src="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1EVc1N3N0SMKnyG6ec3ri9XfWv18dmkRbFg7L" alt="Logo" class="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 flicker-slow logo" />
+    <img src="media/logo.webp" width="320" height="320" alt="Logo" decoding="async" class="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 flicker-slow logo" />
     <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold flicker-slow text-purple-200 mb-2">Emanuel Almeida</h1>
     <p class="subtitle flicker-fast mb-8 sm:mb-10">web designer &amp; cybersecurity student</p>
     <div class="flex flex-col items-center space-y-4 sm:space-y-6">
@@ -136,7 +137,7 @@
   <div id="about" class="hidden-section z-10 px-4 sm:px-6 max-w-4xl mx-auto">
     <h2 class="text-3xl sm:text-4xl flicker-slow text-purple-300 mb-4 sm:mb-6" data-i18n="about.title">About Me</h2>
     <div class="flex flex-col md:flex-row items-center md:items-start gap-6 sm:gap-8">
-      <img src="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1h3EQD2kM1i7v2NEI3r8CGF6ZYTJgjnQlVms5" alt="Photo of Emanuel" data-i18n-attr="alt:about.photo" class="photo rounded-2xl shadow-md w-48 h-48 sm:w-64 sm:h-64 object-cover" />
+      <img src="media/photo.webp" width="512" height="512" loading="lazy" decoding="async" alt="Photo of Emanuel" data-i18n-attr="alt:about.photo" class="photo rounded-2xl shadow-md w-48 h-48 sm:w-64 sm:h-64 object-cover" />
       <div class="text-left mt-4 md:mt-0">
         <p class="text-purple-200 mb-4" data-i18n-html="about.bio" data-i18n-vars='{"age":"24"}'></p>
         <p class="text-purple-400 text-sm" data-i18n-html="about.facts"></p>
@@ -273,13 +274,13 @@
   <div id="lightbox" class="lightbox" aria-hidden="true"><img alt=""><p class="lightbox-caption"></p></div>
 
   <!-- Background Music -->
-  <audio id="bgMusic" loop>
+  <audio id="bgMusic" loop preload="none">
     <source src="media/cyberpunk-bg-music.mp3" type="audio/mpeg">
   </audio>
 
   <script src="i18n.js?v=1"></script>
-  <script src="background.js?v=2"></script>
-  <script src="scripts.js?v=4"></script>
+  <script src="background.js?v=3"></script>
+  <script src="scripts.js?v=5"></script>
 
 </body>
 

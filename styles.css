@@ -4,6 +4,7 @@
   font-family: "CyberwayRiders";
   src: url("https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1o0D83JRyCJ3v1P20d5OQaRGILftH7BumFKek")
     format("woff");
+  font-display: swap;
 }
 
 /* ===== BASE STYLES ===== */
@@ -194,6 +195,9 @@ h2,
 #parallax-bg {
   /* Canvas grid + code rain are drawn in here by background.js */
   background-color: #07000f;
+  /* sky above the horizon; painted by CSS so it shows instantly, before any script runs */
+  background-image: linear-gradient(#05000b 0%, #12011f 12%, #07000f 28%);
+  contain: strict;
   position: fixed;
   top: 0;
   left: 0;
