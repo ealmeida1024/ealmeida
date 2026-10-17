@@ -19,9 +19,9 @@ A version of the portfolio with no PHP and no database. It runs on GitHub Pages.
 3. Commit and push. The site updates in about a minute.
 
 ## Deploying
-This folder is published from the GitHub repo `ealmeida0/ealmeida` with GitHub Pages
+This folder is published from the GitHub repo `ealmeida1024/ealmeida` with GitHub Pages
 (Settings → Pages → Deploy from a branch → `main` / root).
-Live at https://ealmeida0.github.io/ealmeida/
+Live at https://ealmeida1024.github.io/ealmeida/
 
 If the repo is ever renamed, update the two `/ealmeida/` redirects in `404.html`.
 
