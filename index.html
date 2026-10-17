@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EA Portfolio</title>
+  <link rel="icon" href="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1w5V9ntc7nRDkPqL8tzdeXUCio29BAvsmcOxT">
+
+  <!-- External Resources -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Chakra+Petch:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="styles.css?v=4">
+</head>
+
+<body class="text-center flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 relative">
+
+  <!-- Dynamic Background -->
+  <div id="parallax-bg"></div>
+
+  <!-- Loading Page Section -->
+  <div id="loadingScreen" class="loading-container">
+    <img src="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1EVc1N3N0SMKnyG6ec3ri9XfWv18dmkRbFg7L" alt="Logo" class="loading-logo">
+    <div class="loading-bar-container">
+      <div class="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loadingText">Loading assets</div>
+  </div>
+
+  <!-- Main Page Section -->
+  <div id="home" class="z-10">
+    <img src="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1EVc1N3N0SMKnyG6ec3ri9XfWv18dmkRbFg7L" alt="Logo" class="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 flicker-slow logo" />
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold flicker-slow text-purple-200 mb-2">Emanuel Almeida</h1>
+    <p class="subtitle flicker-fast mb-8 sm:mb-10">web designer &amp; cybersecurity student</p>
+    <div class="flex flex-col items-center space-y-4 sm:space-y-6">
+      <button class="menu-button flicker-fast" onclick="navigateTo('works')">Projects</button>
+      <button class="menu-button flicker-fast" onclick="navigateTo('about')">About</button>
+      <button class="menu-button flicker-fast" onclick="navigateTo('contact')">Contact</button>
+    </div>
+  </div>
+
+  <button id="settingsToggle" class="settings-toggle" aria-label="Settings">
+    <i class="bi bi-gear-fill"></i>
+  </button>
+
+  <div id="settingsPanel" class="settings-panel">
+    <div class="settings-header">
+      <h3>SETTINGS</h3>
+      <button class="settings-close" id="settingsClose" aria-label="Close settings panel">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="settings-content">
+      <div class="setting-group">
+        <h4>Audio Settings</h4>
+        <div class="setting-item">
+          <label for="musicVolume">Music Volume</label>
+          <input type="range" id="musicVolume" min="0" max="1" step="0.05" value="0.1" class="volume-slider">
+        </div>
+        <div class="setting-item">
+          <label for="hoverVolume">Hover Volume</label>
+          <input type="range" id="hoverVolume" min="0" max="1" step="0.05" value="0.15" class="volume-slider">
+        </div>
+        <div class="setting-item">
+          <div class="toggle-wrapper">
+            <label for="musicToggle">Background Music</label>
+            <label class="switch">
+              <input type="checkbox" id="musicToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <h4>Visual Settings</h4>
+        <div class="setting-item">
+          <div class="toggle-wrapper">
+            <label for="flickerToggle">Text Flicker Effect</label>
+            <label class="switch">
+              <input type="checkbox" id="flickerToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-item">
+          <div class="toggle-wrapper">
+            <label for="parallaxToggle">Parallax Effect</label>
+            <label class="switch">
+              <input type="checkbox" id="parallaxToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Works Portfolio Section -->
+  <div id="works" class="hidden-section z-10 w-full max-w-5xl mx-auto px-2 sm:px-4">
+    <h2 class="text-3xl sm:text-4xl flicker-slow text-purple-300 mb-6 sm:mb-8">Projects</h2>
+    <div class="search-container">
+      <input type="text" id="workSearch" class="search-input" placeholder="Search works...">
+      <button class="search-button"><i class="bi bi-search"></i></button>
+    </div>
+    <div class="cyberpunk-grid" id="works-container">
+      <div class="cyberpunk-card">
+        <p class="text-purple-300">Loading projects...</p>
+      </div>
+    </div>
+    <button class="back-button flicker-fast mt-8 sm:mt-10" onclick="goBack()"><i class="bi bi-arrow-left"></i></i></button>
+  </div>
+
+  <!-- About Me Section -->
+  <div id="about" class="hidden-section z-10 px-4 sm:px-6 max-w-4xl mx-auto">
+    <h2 class="text-3xl sm:text-4xl flicker-slow text-purple-300 mb-4 sm:mb-6">About Me</h2>
+    <div class="flex flex-col md:flex-row items-center md:items-start gap-6 sm:gap-8">
+      <img src="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1h3EQD2kM1i7v2NEI3r8CGF6ZYTJgjnQlVms5" alt="Your Photo" class="photo rounded-2xl shadow-md w-48 h-48 sm:w-64 sm:h-64 object-cover" />
+      <div class="text-left mt-4 md:mt-0">
+        <p class="text-purple-200 mb-4">
+          Hi, I'm Emanuel, a <span id="dynamic-age">23</span>-year-old web designer with a strong passion for anime and gaming.
+          I love creating visually appealing and user-friendly websites, often drawing inspiration in styles, and creativity found in the things I enjoy.
+          Design, for me, is about blending aesthetics with functionality, and I’m always looking for new ways to make digital experiences more engaging and relatable.
+        </p>
+        <p class="text-purple-400 text-sm">
+          ✨ Based in Lisbon <br />
+          💻 Specialized in HTML, CSS, JS, Bootstrap & Tailwind <br />
+          🔐 Currently studying cybersecurity <br />
+          🎨 Inspired by synthwave, cyberpunk, vapor aesthetics, and glitch art.
+        </p>
+      </div>
+    </div>
+    <button class="back-button flicker-fast mt-8 sm:mt-10" onclick="goBack()"><i class="bi bi-arrow-left"></i></button>
+  </div>
+
+  <!-- Contact Information Section -->
+  <div id="contact" class="hidden-section z-10 px-4 sm:px-6 max-w-3xl mx-auto">
+    <h2 class="text-3xl sm:text-4xl flicker-slow text-purple-300 mb-4 sm:mb-6">Contact</h2>
+    <p class="text-purple-400 mb-6">Let's connect — whether it's for collaboration, questions or anything else!</p>
+    <div class="social-links">
+      <a href="https://www.instagram.com/ealmeida.web/" target="_blank" class="social-link">
+        <i class="bi bi-instagram"></i>
+        <span class="social-label">Instagram</span>
+      </a>
+      <a href="https://github.com/ealmeida0" target="_blank" class="social-link">
+        <i class="bi bi-github"></i>
+        <span class="social-label">GitHub</span>
+      </a>
+      <a href="mailto:ealmeida24ar@outlook.com" class="social-link">
+        <i class="bi bi-envelope-fill"></i>
+        <span class="social-label">Email</span>
+      </a>
+    </div>
+    <button class="back-button flicker-fast mt-8 sm:mt-10" onclick="goBack()"><i class="bi bi-arrow-left"></i></i></button>
+  </div>
+
+  <!-- Help and Info Section -->
+  <div class="help-hover-menu">
+    <button id="helpToggle" class="help-toggle" aria-label="Help Information">
+      <i class="bi bi-question-circle-fill"></i>
+    </button>
+    <div class="help-content" id="helpContent">
+      <div class="help-header">
+        <h3>HELP CENTER</h3>
+        <button class="help-close" id="helpClose" aria-label="Close help menu">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="help-scrollable">
+        <div class="help-container">
+          <div class="help-item">
+            <div class="help-question">
+              <i class="bi bi-question-circle"></i>
+              <h3>Navigation Keys</h3>
+            </div>
+            <div class="help-answer">
+              <p>Use <span class="key">Alt+1</span> for Home, <span class="key">Alt+2</span> for Projects, <span class="key">Alt+3</span> for About, <span class="key">Alt+4</span> for Contact.</p>
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-question">
+              <i class="bi bi-question-circle"></i>
+              <h3>Audio Controls</h3>
+            </div>
+            <div class="help-answer">
+              <p>Press <span class="key">M</span> to toggle background music or use the audio settings in the settings menu.</p>
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-question">
+              <i class="bi bi-question-circle"></i>
+              <h3>Previewing Projects</h3>
+            </div>
+            <div class="help-answer">
+              <p>Click the eye icon on a project card to open a live preview.</p>
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-question">
+              <i class="bi bi-question-circle"></i>
+              <h3>Can't Find Something?</h3>
+            </div>
+            <div class="help-answer">
+              <p>Use the search function in the Projects section to filter projects by name, description, or technologies.</p>
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-question">
+              <i class="bi bi-question-circle"></i>
+              <h3>Need More Help?</h3>
+            </div>
+            <div class="help-answer">
+              <p>Contact me directly via email at <a href="mailto:ealmeida24ar@outlook.com" class="text-purple-300 hover:text-white">ealmeida24ar@outlook.com</a></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="keyboard-shortcuts">
+          <h3 class="text-xl text-purple-300 mb-3">Keyboard Shortcuts</h3>
+          <div class="shortcut-grid">
+            <div class="shortcut"><span class="key">ESC</span> Close modals</div>
+            <div class="shortcut"><span class="key">Alt+1</span> Home</div>
+            <div class="shortcut"><span class="key">Alt+2</span> Projects </div>
+            <div class="shortcut"><span class="key">Alt+3</span> About</div>
+            <div class="shortcut"><span class="key">Alt+4</span> Contact</div>
+            <div class="shortcut"><span class="key">Alt+H</span> Toggle Help</div>
+            <div class="shortcut"><span class="key">M</span> Toggle music</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <!-- Code Preview Modal -->
+  <div id="codeModal" class="code-modal">
+    <div class="code-modal-content w-11/12 sm:w-4/5">
+      <div class="code-modal-header">
+        <h3 id="codeModalTitle" class="text-purple-300 text-lg sm:text-xl">Code Preview</h3>
+        <button class="close-modal" onclick="closeCodeModal()">&times;</button>
+      </div>
+      <div id="codeModalBody" class="code-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Background Music -->
+  <audio id="bgMusic" loop>
+    <source src="media/cyberpunk-bg-music.mp3" type="audio/mpeg">
+  </audio>
+
+  <script src="background.js?v=2"></script>
+  <script src="scripts.js?v=2"></script>
+
+</body>
+
+</html>

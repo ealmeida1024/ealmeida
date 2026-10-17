@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - System Error | EA Portfolio</title>
+    <link rel="icon" href="https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1w5V9ntc7nRDkPqL8tzdeXUCio29BAvsmcOxT">
+    
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Chakra+Petch:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <style>
+        @font-face {
+            font-family: "CyberwayRiders";
+            src: url("https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1o0D83JRyCJ3v1P20d5OQaRGILftH7BumFKek") format("woff");
+        }
+
+        body {
+            font-family: "Space Grotesk", sans-serif;
+            background-color: #0e001a;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            color: #bdb7da;
+        }
+
+        .cyberpunk-bg {
+            background-image: url("https://xznm6a1vqn.ufs.sh/f/mXkbqgXQWqH1gSSdZnrBDydIz1LF9njxuQaHtYlU0Msc7iXV");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            filter: brightness(0.2) contrast(1.2);
+        }
+
+        .glitch-text {
+            font-family: "CyberwayRiders", sans-serif;
+            font-size: 64px;
+            font-weight: 700;
+            color:rgb(255, 255, 255);
+            text-shadow: 
+                0 0 10px #c082ff,
+                0 0 20px #c082ff,
+                0 0 40px #c082ff,
+                0 0 80px #c082ff;
+            animation: glitch 1s infinite;
+        }
+
+        .error-subtitle {
+            font-family: "Chakra Petch", sans-serif;
+            font-size: clamp(1.2rem, 4vw, 2rem);
+            color: #9d4edd;
+            text-shadow: 0 0 10px #9d4edd;
+            animation: flicker 2s infinite alternate;
+            margin-bottom: 2rem;
+        }
+
+        .terminal-container {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #7b3fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-family: "Courier New", monospace;
+            font-size: 14px;
+            color: #c082ff;
+            box-shadow: 0 0 20px rgba(123, 63, 255, 0.3);
+            margin-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #333;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .red { background-color: #ff5f56; }
+        .yellow { background-color: #ffbd2e; }
+        .green { background-color: #27ca3f; }
+
+        .terminal-line {
+            margin: 0.5rem 0;
+            opacity: 0;
+            animation: typewriter 0.5s forwards;
+        }
+
+        .terminal-line:nth-child(1) { animation-delay: 0.5s; }
+        .terminal-line:nth-child(2) { animation-delay: 1s; }
+        .terminal-line:nth-child(3) { animation-delay: 1.5s; }
+        .terminal-line:nth-child(4) { animation-delay: 2s; }
+        .terminal-line:nth-child(5) { animation-delay: 2.5s; }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background-color: #c082ff;
+            animation: blink 1s infinite;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .menu-button {
+            font-family: "CyberwayRiders", sans-serif;
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            padding: 12px 24px;
+            color: #dcd6f7;
+            background: transparent;
+            border: 2px solid transparent;
+            text-shadow: 0 0 5px #c082ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-button:hover {
+            color: black;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 2px solid #c082ff;
+            text-shadow: none;
+        }
+
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .floating-element {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #c082ff;
+            border-radius: 50%;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        .floating-element:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .floating-element:nth-child(2) { top: 20%; left: 80%; animation-delay: 1s; }
+        .floating-element:nth-child(3) { top: 60%; left: 20%; animation-delay: 2s; }
+        .floating-element:nth-child(4) { top: 80%; left: 70%; animation-delay: 3s; }
+        .floating-element:nth-child(5) { top: 40%; left: 90%; animation-delay: 4s; }
+
+        .scan-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 255, 0, 0.03) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); }
+            10% { transform: translate(-2px, 2px); }
+            20% { transform: translate(2px, -2px); }
+            30% { transform: translate(-2px, -2px); }
+            40% { transform: translate(2px, 2px); }
+            50% { transform: translate(-2px, 2px); }
+            60% { transform: translate(2px, -2px); }
+            70% { transform: translate(-2px, -2px); }
+            80% { transform: translate(2px, 2px); }
+            90% { transform: translate(-2px, 2px); }
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        @keyframes typewriter {
+            to { opacity: 1; }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.5; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+
+        .error-code {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+            color: #7b3fff;
+            opacity: 0.7;
+        }
+
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .matrix-column {
+            position: absolute;
+            top: -100%;
+            font-family: "Courier New", monospace;
+            font-size: 14px;
+            color: #9d4edd;
+            opacity: 0.3;
+            animation: matrixFall 8s linear infinite;
+        }
+
+        @keyframes matrixFall {
+            to { top: 100%; }
+        }
+
+        @media (max-width: 768px) {
+            .terminal-container {
+                padding: 1rem;
+                font-size: 12px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .menu-button {
+                width: 100%;
+                text-align: center;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .error-code {
+                font-size: 10px;
+                top: 1rem;
+                left: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 relative">
+    
+    <div class="cyberpunk-bg"></div>
+    <div class="scan-lines"></div>
+    
+    <div class="floating-elements">
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+    </div>
+
+    <div class="matrix-rain" id="matrixRain"></div>
+
+    <div class="error-code">
+        ERR_404_SYSTEM_BREACH<br>
+        LOCATION: /unknown<br>
+        STATUS: DISCONNECTED
+    </div>
+
+    <div class="text-center z-10">
+        <div class="glitch-text">404</div>
+        <div class="error-subtitle">SYSTEM ERROR</div>
+        
+        <div class="terminal-container text-left max-w-md mx-auto">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div>
+                <div class="terminal-dot yellow"></div>
+                <div class="terminal-dot green"></div>
+                <span class="ml-2 text-gray-400">system@ea-portfolio:~$</span>
+            </div>
+            <div class="terminal-line">> Scanning network...</div>
+            <div class="terminal-line">> ERROR: File not found</div>
+            <div class="terminal-line">> Running diagnostic...</div>
+            <div class="terminal-line">> Suggestion: Return to base</div>
+            <div class="terminal-line">> System ready <span class="cursor"></span></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="menu-button" onclick="history.back()">
+                <i class="bi bi-arrow-left"></i>
+                Go Back
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function createMatrixRain() {
+            const matrixContainer = document.getElementById('matrixRain');
+            const characters = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            
+            for (let i = 0; i < 15; i++) {
+                const column = document.createElement('div');
+                column.className = 'matrix-column';
+                column.style.left = `${Math.random() * 100}%`;
+                column.style.animationDelay = `${Math.random() * 8}s`;
+                column.style.animationDuration = `${8 + Math.random() * 4}s`;
+                
+                let columnText = '';
+                for (let j = 0; j < 20; j++) {
+                    columnText += characters[Math.floor(Math.random() * characters.length)] + '<br>';
+                }
+                column.innerHTML = columnText;
+                
+                matrixContainer.appendChild(column);
+            }
+        }
+
+ 
+        createMatrixRain();
+
+
+        setInterval(createMatrixRain, 12000);
+
+
+        function addRandomGlitch() {
+            const elements = document.querySelectorAll('.glitch-text, .error-subtitle');
+            elements.forEach(el => {
+                if (Math.random() < 0.3) {
+                    el.style.animation = 'none';
+                    setTimeout(() => {
+                        el.style.animation = '';
+                    }, 100);
+                }
+            });
+        }
+
+        setInterval(addRandomGlitch, 3000);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.location.href = '/ealmeida/';
+            }
+            if (e.key === 'h' || e.key === 'H') {
+                window.location.href = '/ealmeida/';
+            }
+        });
+
+    </script>
+</body>
+</html>

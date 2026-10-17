@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Space Grotesk', Arial, sans-serif;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+        .preview-header {
+            background: #0e001a;
+            color: #c3acf1;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            border-bottom: 1px solid #7b3fff;
+        }
+        .preview-header h1 { font-size: 1.2rem; font-weight: 500; }
+        .preview-header .actions { display: flex; gap: 10px; }
+        .preview-header button {
+            background: #7b3fff;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .preview-header button:hover { background: #6b2eff; }
+        .preview-content {
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 55px);
+            border: none;
+            background: #fff;
+            transition: all 0.3s ease;
+        }
+        .preview-message { color: #c3acf1; padding: 40px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="preview-header">
+        <h1 id="previewTitle">Preview</h1>
+        <div class="actions">
+            <button onclick="toggleResponsiveMode()">Toggle Mobile View</button>
+            <button onclick="closePreview()">Close Preview</button>
+        </div>
+    </div>
+
+    <iframe id="previewFrame" class="preview-content" title="Project preview"></iframe>
+
+    <script>
+        // Static replacement for preview.php: builds the page in the browser
+        // from data/works.json instead of writing temp files on a server.
+        const frame = document.getElementById('previewFrame');
+        let blobUrl = null;
+
+        function showMessage(text) {
+            frame.replaceWith(Object.assign(document.createElement('p'), {
+                className: 'preview-message',
+                textContent: text
+            }));
+        }
+
+        const id = new URLSearchParams(location.search).get('id');
+        if (!id) {
+            location.href = 'index.html';
+        } else {
+            fetch('data/works.json')
+                .then(r => r.json())
+                .then(works => {
+                    const work = works.find(w => String(w.id) === String(id));
+                    if (!work) return showMessage('Work not found');
+
+                    const html = work.html_code || '';
+                    const css = work.css_code || '';
+                    const js = work.js_code || '';
+                    if (!html && !css && !js) return showMessage('No code available to preview');
+
+                    document.title = 'Preview: ' + work.title;
+                    document.getElementById('previewTitle').textContent = 'Preview: ' + work.title;
+
+                    const page = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+                        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+                        '<title>Content Preview</title><style>html, body { height: 100%; margin: 0; padding: 0; overflow-y: auto; }\n' +
+                        css + '</style></head><body>' +
+                        (html || '<div class="container"><h1>Preview</h1><p>HTML content missing</p></div>') +
+                        '<script>' + js + '<\/script></body></html>';
+
+                    // A blob URL keeps the project's relative links (styles.css, script.js)
+                    // from loading this portfolio's own files.
+                    blobUrl = URL.createObjectURL(new Blob([page], { type: 'text/html' }));
+                    frame.src = blobUrl;
+                })
+                .catch(() => showMessage('Could not load the project.'));
+        }
+
+        function toggleResponsiveMode() {
+            if (frame.style.width === '375px') {
+                frame.style.width = '100%';
+                frame.style.height = 'calc(100vh - 55px)';
+                frame.style.margin = '0';
+                frame.style.border = 'none';
+                frame.style.borderRadius = '0';
+            } else {
+                frame.style.width = '375px';
+                frame.style.height = '667px';
+                frame.style.margin = '20px auto';
+                frame.style.display = 'block';
+                frame.style.border = '10px solid #333';
+                frame.style.borderRadius = '20px';
+            }
+        }
+
+        function closePreview() {
+            window.close();
+            setTimeout(() => { location.href = 'index.html'; }, 100);
+        }
+
+        window.addEventListener('pagehide', () => { if (blobUrl) URL.revokeObjectURL(blobUrl); });
+    </script>
+</body>
+</html>
