@@ -76,7 +76,7 @@
         if (!id) {
             location.href = 'index.html';
         } else {
-            fetch('data/works.json')
+            fetch('data/works.json', { cache: 'no-cache' })
                 .then(r => r.json())
                 .then(works => {
                     const work = works.find(w => String(w.id) === String(id));

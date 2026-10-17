@@ -139,7 +139,7 @@ function goBack() {
 let worksCache = null;
 function getWorks() {
   if (!worksCache) {
-    worksCache = fetch("data/works.json").then((r) => {
+    worksCache = fetch("data/works.json", { cache: "no-cache" }).then((r) => {
       if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
       return r.json();
     });
@@ -171,7 +171,7 @@ function closeCodeModal() {
 
 // ===== Work Items Functions =====
 function fetchAndDisplayWorks() {
-  fetch("data/works.json")
+  fetch("data/works.json", { cache: "no-cache" })
     .then((response) => {
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -671,7 +671,7 @@ function init() {
   fetchAndDisplayWorks();
 
   function fetchAndDisplayWorks() {
-    fetch("data/works.json")
+    fetch("data/works.json", { cache: "no-cache" })
       .then((response) => {
         if (!response.ok) {
           console.error(`HTTP error! status: ${response.status}`);
